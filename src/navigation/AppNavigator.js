@@ -1,13 +1,14 @@
 // src/navigation/AppNavigator.js
-import React, { useEffect, useState } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
-import Signup from '../components/Signup';
-import Login from '../components/Login';
-import TeacherHome from '../screens/TeacherHome';
-import StudentHome from '../screens/StudentHome';
-import { auth, db } from '../firebase/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { NavigationContainer } from "@react-navigation/native";
+import Signup from "../components/Signup";
+import Login from "../components/Login";
+import TeacherHome from "../screens/TeacherHome";
+import StudentHome from "../screens/StudentHome";
+import Chat from "../components/Chat";
+import { auth, db } from "../firebase/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 
 const Stack = createNativeStackNavigator();
 
@@ -18,7 +19,7 @@ export default function AppNavigator() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        const docSnap = await getDoc(doc(db, "users", user.uid));
         if (docSnap.exists()) setUserRole(docSnap.data().role);
       } else setUserRole(null);
       setLoading(false);
@@ -36,10 +37,26 @@ export default function AppNavigator() {
             <Stack.Screen name="Signup" component={Signup} />
             <Stack.Screen name="Login" component={Login} />
           </>
-        ) : userRole === 'teacher' ? (
-          <Stack.Screen name="TeacherHome" component={TeacherHome} />
+        ) : userRole === "teacher" ? (
+          <>
+            <Stack.Screen name="TeacherHome" component={TeacherHome} />
+            {/* Chat route for teacher with studentUid param */}
+            <Stack.Screen
+              name="Chat"
+              component={Chat}
+              initialParams={{ studentUid: null }} // will pass student UID when navigating
+            />
+          </>
         ) : (
-          <Stack.Screen name="StudentHome" component={StudentHome} />
+          <>
+            <Stack.Screen name="StudentHome" component={StudentHome} />
+            {/* Chat route for student with teacherUid param */}
+            <Stack.Screen
+              name="Chat"
+              component={Chat}
+              initialParams={{ studentUid: null }} // pass teacher UID when navigating
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

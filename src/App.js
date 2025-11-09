@@ -9,11 +9,17 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Routes */}
         <Route path="/" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+
+        {/* Dashboards */}
         <Route path="/teacher" element={<TeacherHome />} />
         <Route path="/student" element={<StudentHome />} />
-        <Route path="/chat" element={<Chat />} />
+
+        {/* Chat with dynamic UID */}
+        <Route path="/chat/:otherUserUid" element={<Chat />} />
+
       </Routes>
     </BrowserRouter>
   );
