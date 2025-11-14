@@ -1,4 +1,4 @@
-// src/components/Chat.js
+// Chat.js
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db, auth } from "../firebase/firebaseConfig";
@@ -15,44 +15,52 @@ import {
 import { getOrCreateChat } from "../firebase/firestoreSetup";
 
 export default function Chat() {
-  const { otherUserUid } = useParams(); // Make sure the route passes this param
+  const { otherUserUid } = useParams();
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [chatId, setChatId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  //temp
+  
+
 
   // Initialize chat
   useEffect(() => {
     async function initChat() {
+      console.log("Initializing chat...");
+      console.log("Current user:", auth.currentUser);
+      console.log("Other user:", otherUserUid);
       if (!auth.currentUser || !otherUserUid) return;
 
       try {
-        const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-        const role = userSnap.exists() ? userSnap.data().role : null;
-        setUserRole(role);
+        // Ensure both users actually exist
+        const user1 = await getDoc(doc(db, "users", auth.currentUser.uid));
+        const user2 = await getDoc(doc(db, "users", otherUserUid));
+        //console.log(auth.currentUser.uid);
+      
+        
+        //console.log(otherUserUid);
 
-        if (!role) {
-          console.error("User role not found!");
+        if (!user1.exists() || !user2.exists()) {
+          console.error("User not found in Firestore");
           setLoading(false);
           return;
         }
 
-        const studentUid = role === "teacher" ? otherUserUid : auth.currentUser.uid;
-        const teacherUid = role === "teacher" ? auth.currentUser.uid : otherUserUid;
-
-        // ✅ Use consistent chat ID
-        const id = await getOrCreateChat(studentUid, teacherUid);
+        // Create or get chat
+        const id = await getOrCreateChat(auth.currentUser.uid, otherUserUid);
         setChatId(id);
+        console.log(id);
+        //console.log(chatId);
         setLoading(false);
+
       } catch (err) {
         console.error("Error initializing chat:", err);
         setLoading(false);
@@ -61,25 +69,27 @@ export default function Chat() {
     initChat();
   }, [otherUserUid]);
 
-  // Listen to messages in real-time
+  // Listen to messages
   useEffect(() => {
     if (!chatId) return;
 
-    const messagesRef = collection(db, "chats", chatId, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      },
-      (error) => console.error("Error fetching messages:", error)
+    const q = query(
+      collection(db, "chats", chatId, "messages"),
+      orderBy("timestamp", "asc")
     );
 
-    return () => unsubscribe();
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    return unsubscribe;
   }, [chatId]);
 
+  // Send message
   const sendMessage = async () => {
+    console.log("Sending message:", message);
+    console.log("Chat ID:", chatId);
+    console.log("Current user UID:", auth.currentUser?.uid);
     if (!message.trim() || !chatId) return;
 
     try {
@@ -88,6 +98,7 @@ export default function Chat() {
         senderId: auth.currentUser.uid,
         timestamp: serverTimestamp(),
       });
+
       setMessage("");
     } catch (err) {
       console.error("Error sending message:", err);
@@ -101,9 +112,6 @@ export default function Chat() {
       <h2 className="text-2xl font-bold text-white mb-4">💬 Chat</h2>
 
       <div className="w-full max-w-2xl bg-white/20 backdrop-blur-lg rounded-xl p-4 h-[400px] overflow-y-auto mb-4">
-        {messages.length === 0 && (
-          <p className="text-white text-center mt-10">No messages yet.</p>
-        )}
         {messages.map((msg) => (
           <div
             key={msg.id}
