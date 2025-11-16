@@ -29,8 +29,7 @@ export default function Chat() {
 
   //temp
   
-
-
+  
   // Initialize chat
   useEffect(() => {
     async function initChat() {

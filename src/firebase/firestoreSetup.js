@@ -29,6 +29,7 @@ const generateChatId = (uid1, uid2) => {
 };
 
 // Upload assignment
+// Upload assignment
 export async function uploadAssignment(title, description, fileUrl, uploadedByUid) {
   try {
     const userSnap = await getDoc(doc(db, "users", uploadedByUid));
@@ -41,10 +42,14 @@ export async function uploadAssignment(title, description, fileUrl, uploadedByUi
       uploadedBy: uploadedByName,
       uploadedAt: serverTimestamp(),
     });
+
+    console.log("Assignment uploaded successfully:", title);
   } catch (error) {
     console.error("Error uploading assignment:", error);
+    throw error; // so caller knows it failed
   }
 }
+
 
 // Create or get chat
 export async function getOrCreateChat(uid1, uid2) {
@@ -54,6 +59,7 @@ export async function getOrCreateChat(uid1, uid2) {
     throw new Error("Both user IDs are required.");
   }
 
+  // Always generate the same chatId for same pair
   const chatId = generateChatId(uid1, uid2);
   const chatRef = doc(db, "chats", chatId);
 
@@ -62,8 +68,10 @@ export async function getOrCreateChat(uid1, uid2) {
 
     if (!chatSnap.exists()) {
       console.log("Chat does not exist, creating...");
+      // Store participants in ascending UID order
+      const participants = uid1 < uid2 ? [uid1, uid2] : [uid2, uid1];
       await setDoc(chatRef, {
-        participants: [uid1, uid2],
+        participants,
         createdAt: serverTimestamp(),
       });
       console.log("Chat created successfully:", chatId);
@@ -77,4 +85,3 @@ export async function getOrCreateChat(uid1, uid2) {
 
   return chatId;
 }
-
