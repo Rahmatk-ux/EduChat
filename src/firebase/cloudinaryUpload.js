@@ -1,6 +1,6 @@
 // cloudinaryUpload.js
 export async function uploadFileToCloudinary(file) {
-  const url = `https://api.cloudinary.com/v1_1/dyvtyzhy9/raw/upload`;
+  const url = `https://api.cloudinary.com/v1_1/dod7b9rpw/raw/upload`;
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", "assignment_raw_upload"); // unsigned preset

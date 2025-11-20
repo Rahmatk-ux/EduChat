@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { uploadAssignment } from "../firebase/firestoreSetup";
 import { uploadFileToCloudinary } from "../firebase/cloudinaryUpload";
-import { auth } from "../firebase/firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { sendNotification } from "../firebase/notificationHelpers";
 
 export default function UploadAssignment() {
   const [title, setTitle] = useState("");
@@ -33,6 +35,20 @@ export default function UploadAssignment() {
       // Store in Firestore
       await uploadAssignment(title, description, fileUrl, auth.currentUser.uid);
 
+      // 🔔 Send notification to all students
+      const usersCol = collection(db, "users");
+      const q = query(usersCol, where("role", "==", "student"));
+      const snapshot = await getDocs(q);
+      const students = snapshot.docs.map((d) => ({ id: d.id }));
+
+      students.forEach((s) => {
+        sendNotification(
+          s.id,
+          "New Assignment",
+          `A new assignment "${title}" has been uploaded!`
+        );
+      });
+
       alert("Assignment uploaded successfully!");
       setTitle("");
       setDescription("");
@@ -47,35 +63,36 @@ export default function UploadAssignment() {
 
   if (loading) return <p className="text-white">Loading...</p>;
 
-  return (
-    <div className="flex flex-col space-y-2 mt-4 max-w-md mx-auto">
-      <input
-        className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
-        placeholder="Assignment Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <input
-        className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
-        placeholder="Assignment Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={(e) => setFile(e.target.files[0])}
-        className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
-      />
-      <button
-        onClick={handleUpload}
-        disabled={uploading}
-        className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold ${
-          uploading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-      >
-        {uploading ? "Uploading..." : "Upload Assignment"}
-      </button>
-    </div>
-  );
+return (
+  <div className="flex flex-col space-y-2 mt-4 max-w-md mx-auto">
+    <input
+      className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-black placeholder:text-gray-400"
+      placeholder="Assignment Title"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+    />
+    <input
+      className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-black placeholder:text-gray-400"
+      placeholder="Assignment Description"
+      value={description}
+      onChange={(e) => setDescription(e.target.value)}
+    />
+    <input
+      type="file"
+      accept=".pdf"
+      onChange={(e) => setFile(e.target.files[0])}
+      className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-black"
+    />
+    <button
+      onClick={handleUpload}
+      disabled={uploading}
+      className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold ${
+        uploading ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    >
+      {uploading ? "Uploading..." : "Upload Assignment"}
+    </button>
+  </div>
+);
+
 }

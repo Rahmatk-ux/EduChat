@@ -5,6 +5,7 @@ import Assignments from "../components/Assignments";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase/firebaseConfig";
 import { collection, getDocs, query, where, onSnapshot } from "firebase/firestore";
+import Notifications from "../components/Notifications";
 
 export default function StudentHome() {
   const navigate = useNavigate();
@@ -183,6 +184,9 @@ return (
         </ul>
       </div>
     </div>
+
+     {/* Notifications Section */}
+      <Notifications userId={auth.currentUser.uid} role="student" />
 
     {/* Assignments */}
     <div className="w-full max-w-4xl bg-white/20 backdrop-blur-lg rounded-2xl p-4 sm:p-6">
